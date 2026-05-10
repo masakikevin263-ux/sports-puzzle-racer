@@ -1,252 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sports Puzzle Racer</title>
+
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#0f172a;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-#app{width:100%;max-width:660px}
-.card{background:#111827;border:1px solid #334155;border-radius:18px;padding:20px;margin-bottom:14px}
-.center{text-align:center}
-.hidden{display:none}
-h1{font-size:28px;margin:10px 0}
-.sub{color:#94a3b8;line-height:1.6;font-size:14px}
-.btn{background:#22c55e;border:none;color:#fff;padding:13px 28px;border-radius:12px;cursor:pointer;font-size:16px;font-weight:bold;margin-top:16px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
-.stat{background:#111827;border:1px solid #334155;border-radius:14px;padding:10px}
-.slabel{color:#94a3b8;font-size:11px;margin-bottom:4px}
-.sval{font-size:20px;font-weight:bold}
-.track{position:relative;height:40px;background:#1e293b;border-radius:999px;overflow:hidden;margin-bottom:10px}
-.lane{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 44px,rgba(255,255,255,.15) 44px,rgba(255,255,255,.15) 47px)}
-.prog{position:absolute;top:0;bottom:0;left:0;width:0%;opacity:.3;transition:width .05s}
-.carEl{position:absolute;top:50%;transform:translateY(-50%);font-size:22px;left:0;z-index:2;transition:left .05s}
-.flagEl{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:20px}
-.tlabel{font-size:12px;color:#cbd5e1;margin-bottom:5px}
-.tbar-wrap{height:7px;background:#1e293b;border-radius:999px;overflow:hidden;margin-bottom:14px}
-.tbar{height:100%;width:100%;background:#22c55e;transition:width .1s linear}
-.ptype{color:#94a3b8;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
-.qtext{font-size:22px;margin-bottom:16px;line-height:1.4}
-.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.opt{background:#1e293b;border:1px solid #334155;color:#fff;border-radius:12px;padding:13px 14px;font-size:16px;cursor:pointer;text-align:left;width:100%}
-.opt:hover:not(:disabled){background:#334155}
-.opt.correct{background:#14532d;border-color:#22c55e}
-.opt.wrong{background:#7f1d1d;border-color:#ef4444}
-.opt:disabled{opacity:.6;cursor:default}
-.fb{margin-top:12px;color:#cbd5e1;font-size:14px;min-height:20px}
-.combo{color:#facc15}
-#cd-screen{font-size:100px;font-weight:bold}
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#0b1220;
+  color:white;
+}
+
+.hero{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  padding:40px 20px;
+  background:radial-gradient(circle at top,#1e293b,#0b1220);
+}
+
+.logo{
+  font-size:60px;
+  margin-bottom:10px;
+}
+
+h1{
+  font-size:42px;
+  margin:10px 0;
+}
+
+.tagline{
+  color:#94a3b8;
+  font-size:18px;
+  max-width:600px;
+  line-height:1.5;
+}
+
+.btn{
+  margin-top:25px;
+  padding:14px 30px;
+  font-size:16px;
+  border:none;
+  border-radius:12px;
+  background:#22c55e;
+  color:white;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.btn:hover{
+  background:#16a34a;
+  transform:scale(1.05);
+}
+
+.section{
+  padding:80px 20px;
+  max-width:900px;
+  margin:auto;
+  text-align:center;
+}
+
+.features{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:20px;
+  margin-top:30px;
+}
+
+.card{
+  background:#111827;
+  padding:20px;
+  border-radius:14px;
+  border:1px solid #1f2937;
+}
+
+.card h3{
+  margin-bottom:10px;
+  color:#22c55e;
+}
+
+.footer{
+  text-align:center;
+  padding:30px;
+  color:#64748b;
+  font-size:14px;
+  border-top:1px solid #1f2937;
+}
+
+.play-area{
+  display:none;
+  padding:20px;
+}
 </style>
+</head>
 
-<div id="app">
-  <!-- Start -->
-  <div id="s-start" class="card center">
-    <div style="font-size:56px">🏎️</div>
-    <h1>Sports Puzzle Racer</h1>
-    <p class="sub">Solve math &amp; sports puzzles to boost your car.<br>Wrong answers slow you down. Beat the opponent!</p>
-    <button class="btn" id="btn-start">Start Race 🚦</button>
-  </div>
+<body>
 
-  <!-- Countdown -->
-  <div id="s-cd" class="card center hidden" id="cd-screen"></div>
+<!-- HERO -->
+<div class="hero" id="home">
+  <div class="logo">🏎️</div>
+  <h1>Sports Puzzle Racer</h1>
+  <p class="tagline">
+    A fast-paced racing game where brainpower drives speed.
+    Solve math and sports puzzles to boost your car and win races.
+  </p>
 
-  <!-- Game -->
-  <div id="s-game" class="hidden">
-    <div class="stats">
-      <div class="stat"><div class="slabel">LEVEL</div><div class="sval" id="st-lv">1</div></div>
-      <div class="stat"><div class="slabel">SCORE</div><div class="sval" id="st-sc">0</div></div>
-      <div class="stat"><div class="slabel">LIVES</div><div class="sval" id="st-lf">❤️❤️❤️</div></div>
-      <div class="stat"><div class="slabel">COMBO</div><div class="sval combo" id="st-cb">x0</div></div>
-    </div>
+  <button class="btn" onclick="startGame()">
+    ▶ Play Now
+  </button>
+</div>
+
+<!-- FEATURES -->
+<div class="section">
+  <h2>Game Features</h2>
+
+  <div class="features">
+
     <div class="card">
-      <div class="tlabel">Your Car 🏎️</div>
-      <div class="track">
-        <div class="prog" id="pp" style="background:#22c55e"></div>
-        <div class="lane"></div>
-        <div class="carEl" id="pc">🏎️</div>
-        <div class="flagEl">🏁</div>
-      </div>
-      <div class="tlabel">Opponent 🚗</div>
-      <div class="track">
-        <div class="prog" id="op" style="background:#ef4444"></div>
-        <div class="lane"></div>
-        <div class="carEl" id="oc">🚗</div>
-        <div class="flagEl">🏁</div>
-      </div>
+      <h3>🏁 Racing Action</h3>
+      Real-time racing with opponent AI.
     </div>
-    <div class="tbar-wrap"><div class="tbar" id="tb"></div></div>
-    <div class="card">
-      <div class="ptype" id="pt"></div>
-      <div class="qtext" id="qq"></div>
-      <div class="opts" id="opts"></div>
-      <div class="fb" id="fb"></div>
-    </div>
-  </div>
 
-  <!-- End -->
-  <div id="s-end" class="card center hidden">
-    <div style="font-size:56px" id="ee">🏆</div>
-    <h1 id="et"></h1>
-    <p class="sub" id="em"></p>
-    <div style="font-size:20px;margin-top:14px">Score: <strong id="fs"></strong></div>
-    <button class="btn" id="btn-again">Race Again 🔁</button>
+    <div class="card">
+      <h3>🧠 Brain Challenges</h3>
+      Math + sports puzzles under pressure.
+    </div>
+
+    <div class="card">
+      <h3>🚀 Turbo System</h3>
+      Correct answers give speed boosts.
+    </div>
+
   </div>
 </div>
 
+<!-- GAME AREA -->
+<div class="section play-area" id="game">
+  <h2>Game Loading...</h2>
+  <p>You can now embed your full game here later.</p>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  © 2026 Sports Puzzle Racer • Built as a browser game prototype
+</div>
+
 <script>
-var PZ=[
-  {d:1,t:"Math",q:"12 × 7 = ?",a:"84",w:["72","96","78"]},
-  {d:1,t:"Math",q:"144 ÷ 12 = ?",a:"12",w:["11","13","14"]},
-  {d:1,t:"Math",q:"25% of 200 = ?",a:"50",w:["40","25","75"]},
-  {d:1,t:"Sports",q:"Players on a basketball court per team?",a:"5",w:["6","4","7"]},
-  {d:1,t:"Sports",q:"Holes in a round of golf?",a:"18",w:["9","12","24"]},
-  {d:2,t:"Math",q:"15² = ?",a:"225",w:["215","235","200"]},
-  {d:2,t:"Math",q:"√64 = ?",a:"8",w:["6","7","9"]},
-  {d:2,t:"Sports",q:"Olympic swimming pool length?",a:"50 m",w:["25 m","100 m","75 m"]},
-  {d:2,t:"Sports",q:"Touchdown points in American football?",a:"6",w:["7","3","5"]},
-  {d:3,t:"Math",q:"99 × 11 = ?",a:"1089",w:["990","1099","1008"]},
-  {d:3,t:"Math",q:"3³ = ?",a:"27",w:["9","18","24"]},
-  {d:3,t:"Sports",q:"Monaco Grand Prix laps?",a:"78",w:["65","90","55"]},
-  {d:3,t:"Sports",q:"Volleyball players per team on court?",a:"6",w:["5","7","8"]},
-  {d:4,t:"Math",q:"Area of circle radius 5? (π≈3.14)",a:"78.5",w:["31.4","157","50"]},
-  {d:4,t:"Math",q:"18% of 50 = ?",a:"9",w:["6","12","18"]},
-  {d:4,t:"Sports",q:"'Hell of the North' cycling race?",a:"Paris–Roubaix",w:["Tour de France","Giro d'Italia","Liège–Bastogne–Liège"]},
-  {d:4,t:"Sports",q:"Marathon distance (approx)?",a:"42.2 km",w:["36 km","50 km","26 km"]},
-];
-
-function $(id){return document.getElementById(id)}
-function show(id){$(id).classList.remove('hidden')}
-function hide(id){$(id).classList.add('hidden')}
-function shuffle(a){return a.slice().sort(function(){return Math.random()-.5})}
-
-var G={};
-var loopId,timerId,cdId;
-
-function init(){
-  G={pp:0,op:0,ps:0,os:0.18,lv:1,sc:0,lf:3,cb:0,used:[],done:false,tl:0,mt:0,cur:null,locked:false};
-}
-
 function startGame(){
-  clearInterval(loopId);clearInterval(timerId);clearInterval(cdId);
-  init();
-  hide('s-start');hide('s-end');hide('s-game');
-  show('s-cd');
-  var n=3,$cd=$('s-cd');
-  $cd.textContent=n;
-  cdId=setInterval(function(){
-    n--;
-    if(n>0){$cd.textContent=n;}
-    else if(n===0){$cd.textContent='GO!';}
-    else{
-      clearInterval(cdId);
-      hide('s-cd');show('s-game');
-      updStats();updCars();
-      loopId=setInterval(gameLoop,50);
-      nextPuzzle();
-    }
-  },700);
-}
+  document.querySelector('.hero').style.display='none';
+  document.getElementById('game').style.display='block';
 
-function gameLoop(){
-  if(G.done)return;
-  G.pp+=G.ps; G.op+=G.os;
-  G.ps*=0.96;
-  G.os+=Math.random()>.3?.005:-.003;
-  G.os=Math.max(.12,Math.min(G.os,.35));
-  updCars();
-  if(G.pp>=100){endGame(true);}
-  else if(G.op>=100){endGame(false);}
+  // later: you can paste your full game here or load another file
 }
-
-function nextPuzzle(){
-  clearInterval(timerId);
-  G.locked=false;
-  var pool=PZ.filter(function(p,i){return p.d<=G.lv&&G.used.indexOf(i)<0;});
-  if(!pool.length){G.used=[];pool=PZ.filter(function(p){return p.d<=G.lv;});}
-  var pick=pool[Math.floor(Math.random()*pool.length)];
-  G.used.push(PZ.indexOf(pick));
-  G.cur=pick;
-  $('pt').textContent=pick.t+' Challenge';
-  $('qq').textContent=pick.q;
-  $('fb').textContent='';
-  var os=shuffle([pick.a,pick.w[0],pick.w[1],pick.w[2]]);
-  var c=$('opts');c.innerHTML='';
-  os.forEach(function(o){
-    var b=document.createElement('button');
-    b.className='opt';b.textContent=o;
-    b.onclick=function(){answer(o,b);};
-    c.appendChild(b);
-  });
-  G.mt=Math.max(5000,11000-G.lv*500);
-  G.tl=G.mt;
-  var tb=$('tb');tb.style.width='100%';tb.style.background='#22c55e';
-  timerId=setInterval(function(){
-    G.tl-=100;
-    var pct=G.tl/G.mt*100;
-    tb.style.width=pct+'%';
-    tb.style.background=pct<30?'#ef4444':'#22c55e';
-    if(G.tl<=0){clearInterval(timerId);timeout();}
-  },100);
-}
-
-function answer(choice,btn){
-  if(G.locked||G.done)return;
-  G.locked=true;
-  clearInterval(timerId);
-  var btns=document.querySelectorAll('.opt');
-  btns.forEach(function(b){b.disabled=true;});
-  if(choice===G.cur.a){
-    btn.classList.add('correct');
-    G.cb++;
-    var pts=20+Math.ceil(G.tl/1000)*5+G.cb*5;
-    G.sc+=pts;
-    G.ps+=1.8+G.cb*.08;
-    if(G.sc%120<40)G.lv=Math.min(8,G.lv+1);
-    $('fb').textContent='Correct! +'+pts+' pts 🚀'+(G.cb>1?' Combo x'+G.cb+'!':'');
-  } else {
-    btn.classList.add('wrong');
-    btns.forEach(function(b){if(b.textContent===G.cur.a)b.classList.add('correct');});
-    G.cb=0;G.lf--;G.ps*=.5;
-    $('fb').textContent='Wrong! Answer: '+G.cur.a;
-    if(G.lf<=0){updStats();endGame(false);return;}
-  }
-  updStats();
-  setTimeout(nextPuzzle,900);
-}
-
-function timeout(){
-  if(G.locked||G.done)return;
-  G.locked=true;
-  G.cb=0;G.lf--;G.ps*=.7;
-  var btns=document.querySelectorAll('.opt');
-  btns.forEach(function(b){b.disabled=true;if(b.textContent===G.cur.a)b.classList.add('correct');});
-  $('fb').textContent="⏰ Time's up! Answer: "+G.cur.a;
-  updStats();
-  if(G.lf<=0){endGame(false);return;}
-  setTimeout(nextPuzzle,900);
-}
-
-function updCars(){
-  var p=Math.min(G.pp,100),o=Math.min(G.op,100);
-  $('pc').style.left='calc('+p+'% - 18px)';
-  $('oc').style.left='calc('+o+'% - 18px)';
-  $('pp').style.width=p+'%';
-  $('op').style.width=o+'%';
-}
-
-function updStats(){
-  $('st-lv').textContent=G.lv;
-  $('st-sc').textContent=G.sc;
-  $('st-cb').textContent='x'+G.cb;
-  $('st-lf').textContent='❤️'.repeat(Math.max(0,G.lf))+'🖤'.repeat(Math.max(0,3-G.lf));
-}
-
-function endGame(won){
-  if(G.done)return;
-  G.done=true;
-  clearInterval(loopId);clearInterval(timerId);
-  hide('s-game');show('s-end');
-  $('ee').textContent=won?'🏆':'💥';
-  $('et').textContent=won?'You Won!':'Race Over';
-  $('em').textContent=won?'Outstanding driving on level '+G.lv+'!':'The opponent crossed the line first.';
-  $('fs').textContent=G.sc;
-}
-
-$('btn-start').onclick=startGame;
-$('btn-again').onclick=startGame;
 </script>
+
+</body>
+</html>
