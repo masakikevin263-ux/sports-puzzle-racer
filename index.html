@@ -1,0 +1,273 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+
+const PZ = [
+  {d:1,t:"Math",q:"12 × 7 = ?",a:"84",w:["72","96","78"]},
+  {d:1,t:"Math",q:"144 ÷ 12 = ?",a:"12",w:["11","13","14"]},
+  {d:1,t:"Math",q:"25% of 200 = ?",a:"50",w:["40","25","75"]},
+  {d:1,t:"Sports",q:"Players on a basketball court per team?",a:"5",w:["6","4","7"]},
+  {d:1,t:"Sports",q:"Holes in a round of golf?",a:"18",w:["9","12","24"]},
+  {d:2,t:"Math",q:"15² = ?",a:"225",w:["215","235","200"]},
+  {d:2,t:"Math",q:"√64 = ?",a:"8",w:["6","7","9"]},
+  {d:2,t:"Sports",q:"Olympic swimming pool length?",a:"50 m",w:["25 m","100 m","75 m"]},
+  {d:2,t:"Sports",q:"Touchdown points in American football?",a:"6",w:["7","3","5"]},
+  {d:3,t:"Math",q:"99 × 11 = ?",a:"1089",w:["990","1099","1008"]},
+  {d:3,t:"Math",q:"3³ = ?",a:"27",w:["9","18","24"]},
+  {d:3,t:"Sports",q:"Monaco Grand Prix laps?",a:"78",w:["65","90","55"]},
+  {d:3,t:"Sports",q:"Volleyball players per team on court?",a:"6",w:["5","7","8"]},
+  {d:4,t:"Math",q:"Area of circle radius 5? (π≈3.14)",a:"78.5",w:["31.4","157","50"]},
+  {d:4,t:"Math",q:"18% of 50 = ?",a:"9",w:["6","12","18"]},
+  {d:4,t:"Sports",q:"'Hell of the North' cycling race?",a:"Paris–Roubaix",w:["Tour de France","Giro d'Italia","Liège–Bastogne–Liège"]},
+  {d:4,t:"Sports",q:"Marathon distance (approx)?",a:"42.2 km",w:["36 km","50 km","26 km"]},
+];
+
+function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+function getPuzzle(level, used) {
+  let pool = PZ.filter((p, i) => p.d <= level && !used.includes(i));
+  if (!pool.length) pool = PZ.filter(p => p.d <= level);
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  return { puzzle: pick, idx: PZ.indexOf(pick) };
+}
+
+export default function App() {
+  const [screen, setScreen] = useState("start"); // start | countdown | game | end
+  const [cd, setCd] = useState(3);
+  const [level, setLevel] = useState(1);
+  const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [combo, setCombo] = useState(0);
+  const [playerPos, setPlayerPos] = useState(0);
+  const [oppPos, setOppPos] = useState(0);
+  const [puzzle, setPuzzle] = useState(null);
+  const [opts, setOpts] = useState([]);
+  const [feedback, setFeedback] = useState("");
+  const [selected, setSelected] = useState(null); // {choice, correct}
+  const [timeLeft, setTimeLeft] = useState(1);
+  const [maxTime, setMaxTime] = useState(1);
+  const [won, setWon] = useState(false);
+  const [finalScore, setFinalScore] = useState(0);
+
+  const refs = useRef({
+    playerPos: 0, oppPos: 0,
+    playerSpeed: 0, oppSpeed: 0.4,
+    lives: 3, score: 0, level: 1, combo: 0,
+    used: [], done: false,
+    timeLeft: 10000, maxTime: 10000,
+    puzzle: null,
+  });
+  const loopRef = useRef(null);
+  const timerRef = useRef(null);
+  const cdRef = useRef(null);
+
+  const endGame = useCallback((didWin) => {
+    if (refs.current.done) return;
+    refs.current.done = true;
+    clearInterval(loopRef.current);
+    clearInterval(timerRef.current);
+    setFinalScore(refs.current.score);
+    setWon(didWin);
+    setScreen("end");
+  }, []);
+
+  const loadPuzzle = useCallback((lvl, used) => {
+    clearInterval(timerRef.current);
+    const { puzzle: p, idx } = getPuzzle(lvl, used);
+    refs.current.used = [...used, idx];
+    refs.current.puzzle = p;
+    setPuzzle(p);
+    setOpts(shuffle([p.a, ...p.w]));
+    setFeedback("");
+    setSelected(null);
+    const mt = Math.max(5000, 11000 - lvl * 500);
+    refs.current.timeLeft = mt;
+    refs.current.maxTime = mt;
+    setMaxTime(mt);
+    setTimeLeft(mt);
+    timerRef.current = setInterval(() => {
+      refs.current.timeLeft -= 100;
+      setTimeLeft(refs.current.timeLeft);
+      if (refs.current.timeLeft <= 0) {
+        clearInterval(timerRef.current);
+        // timeout
+        refs.current.combo = 0;
+        refs.current.lives -= 1;
+        refs.current.playerSpeed *= 0.7;
+        setCombo(0);
+        setLives(refs.current.lives);
+        setFeedback("⏰ Time's up! Answer: " + refs.current.puzzle.a);
+        setSelected({ choice: null, correct: refs.current.puzzle.a });
+        if (refs.current.lives <= 0) { endGame(false); return; }
+        setTimeout(() => loadPuzzle(refs.current.level, refs.current.used), 1000);
+      }
+    }, 100);
+  }, [endGame]);
+
+  const startRace = useCallback(() => {
+    // reset all refs
+    refs.current = {
+      playerPos: 0, oppPos: 0,
+      playerSpeed: 0, oppSpeed: 0.18,
+      lives: 3, score: 0, level: 1, combo: 0,
+      used: [], done: false,
+      timeLeft: 10000, maxTime: 10000,
+      puzzle: null,
+    };
+    setPlayerPos(0); setOppPos(0);
+    setLevel(1); setScore(0); setLives(3); setCombo(0);
+    setFeedback(""); setSelected(null);
+    clearInterval(loopRef.current);
+    clearInterval(timerRef.current);
+    clearInterval(cdRef.current);
+    setScreen("countdown");
+    setCd(3);
+    let n = 3;
+    cdRef.current = setInterval(() => {
+      n--;
+      if (n <= 0) {
+        clearInterval(cdRef.current);
+        setScreen("game");
+        loopRef.current = setInterval(() => {
+          if (refs.current.done) return;
+          refs.current.playerPos += refs.current.playerSpeed;
+          refs.current.oppPos += refs.current.oppSpeed;
+          refs.current.playerSpeed *= 0.96;
+          refs.current.oppSpeed += Math.random() > 0.3 ? 0.005 : -0.003;
+          refs.current.oppSpeed = Math.max(0.12, Math.min(refs.current.oppSpeed, 0.35));
+          setPlayerPos(Math.min(refs.current.playerPos, 100));
+          setOppPos(Math.min(refs.current.oppPos, 100));
+          if (refs.current.playerPos >= 100) { endGame(true); }
+          else if (refs.current.oppPos >= 100) { endGame(false); }
+        }, 50);
+        loadPuzzle(1, []);
+      } else {
+        setCd(n);
+      }
+    }, 700);
+  }, [endGame, loadPuzzle]);
+
+  const handleAnswer = useCallback((choice) => {
+    if (selected) return;
+    clearInterval(timerRef.current);
+    const p = refs.current.puzzle;
+    const correct = choice === p.a;
+    setSelected({ choice, correct: p.a });
+    if (correct) {
+      refs.current.combo += 1;
+      const pts = 20 + Math.ceil(refs.current.timeLeft / 1000) * 5 + refs.current.combo * 5;
+      refs.current.score += pts;
+      refs.current.playerSpeed += 1.8 + refs.current.combo * 0.08;
+      if (refs.current.score % 120 < 40) refs.current.level = Math.min(8, refs.current.level + 1);
+      setScore(refs.current.score);
+      setLevel(refs.current.level);
+      setCombo(refs.current.combo);
+      setFeedback(`Correct! +${pts} pts 🚀` + (refs.current.combo > 1 ? ` Combo x${refs.current.combo}!` : ""));
+    } else {
+      refs.current.combo = 0;
+      refs.current.lives -= 1;
+      refs.current.playerSpeed *= 0.5;
+      setCombo(0);
+      setLives(refs.current.lives);
+      setFeedback(`Wrong! Answer: ${p.a}`);
+      if (refs.current.lives <= 0) { endGame(false); return; }
+    }
+    setTimeout(() => loadPuzzle(refs.current.level, refs.current.used), 900);
+  }, [selected, endGame, loadPuzzle]);
+
+  const timerPct = maxTime > 0 ? (timeLeft / maxTime) * 100 : 100;
+
+  const styles = {
+    wrap: { background: "#0f172a", minHeight: "100vh", padding: "20px", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Arial, sans-serif", color: "white" },
+    card: { background: "#111827", border: "1px solid #334155", borderRadius: 18, padding: 20, marginBottom: 14 },
+    btn: { background: "#22c55e", border: "none", color: "white", padding: "13px 28px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: "bold", marginTop: 16 },
+    track: { position: "relative", height: 40, background: "#1e293b", borderRadius: 999, overflow: "hidden", marginBottom: 10 },
+    optBase: { background: "#1e293b", border: "1px solid #334155", color: "white", borderRadius: 12, padding: "13px 14px", fontSize: 16, cursor: "pointer", textAlign: "left", width: "100%" },
+  };
+
+  if (screen === "start") return (
+    <div style={styles.wrap}>
+      <div style={{ ...styles.card, textAlign: "center", maxWidth: 600, width: "100%" }}>
+        <div style={{ fontSize: 56 }}>🏎️</div>
+        <h1 style={{ fontSize: 28, margin: "10px 0" }}>Sports Puzzle Racer</h1>
+        <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>Solve math & sports puzzles to boost your car. Wrong answers slow you down. Beat the opponent!</p>
+        <button style={styles.btn} onClick={startRace}>Start Race 🚦</button>
+      </div>
+    </div>
+  );
+
+  if (screen === "countdown") return (
+    <div style={{ ...styles.wrap, fontSize: 100, fontWeight: "bold" }}>{cd}</div>
+  );
+
+  if (screen === "end") return (
+    <div style={styles.wrap}>
+      <div style={{ ...styles.card, textAlign: "center", maxWidth: 600, width: "100%" }}>
+        <div style={{ fontSize: 56 }}>{won ? "🏆" : "💥"}</div>
+        <h1 style={{ fontSize: 26, margin: "10px 0" }}>{won ? "You Won!" : "Race Over"}</h1>
+        <p style={{ color: "#94a3b8" }}>{won ? `Outstanding driving on level ${level}!` : "The opponent crossed the line first."}</p>
+        <div style={{ fontSize: 20, marginTop: 14 }}>Final Score: <strong>{finalScore}</strong></div>
+        <button style={styles.btn} onClick={startRace}>Race Again 🔁</button>
+      </div>
+    </div>
+  );
+
+  // game screen
+  return (
+    <div style={{ ...styles.wrap, alignItems: "flex-start" }}>
+      <div style={{ maxWidth: 660, width: "100%" }}>
+        {/* Stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 14 }}>
+          {[["LEVEL", level], ["SCORE", score], ["LIVES", "❤️".repeat(Math.max(0,lives)) + "🖤".repeat(Math.max(0,3-lives))], ["COMBO", `x${combo}`]].map(([label, val]) => (
+            <div key={label} style={styles.card}>
+              <div style={{ color: "#94a3b8", fontSize: 11, marginBottom: 4 }}>{label}</div>
+              <div style={{ fontSize: 20, fontWeight: "bold", color: label === "COMBO" ? "#facc15" : "white" }}>{val}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tracks */}
+        <div style={{ ...styles.card }}>
+          {[["Your Car 🏎️", playerPos, "#22c55e", "🏎️"], ["Opponent 🚗", oppPos, "#ef4444", "🚗"]].map(([label, pos, color, emoji]) => (
+            <div key={label} style={{ marginBottom: 6 }}>
+              <div style={{ fontSize: 12, color: "#cbd5e1", marginBottom: 5 }}>{label}</div>
+              <div style={styles.track}>
+                <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: pos + "%", background: color, opacity: 0.3, transition: "width 0.05s" }} />
+                <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(90deg,transparent,transparent 44px,rgba(255,255,255,.15) 44px,rgba(255,255,255,.15) 47px)" }} />
+                <div style={{ position: "absolute", top: "50%", transform: "translateY(-50%)", left: `calc(${pos}% - 18px)`, fontSize: 22, zIndex: 2, transition: "left 0.05s" }}>{emoji}</div>
+                <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 20 }}>🏁</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Timer */}
+        <div style={{ height: 7, background: "#1e293b", borderRadius: 999, overflow: "hidden", marginBottom: 14 }}>
+          <div style={{ height: "100%", width: timerPct + "%", background: timerPct < 30 ? "#ef4444" : "#22c55e", transition: "width 0.1s linear" }} />
+        </div>
+
+        {/* Puzzle */}
+        {puzzle && (
+          <div style={styles.card}>
+            <div style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>{puzzle.t} Challenge</div>
+            <div style={{ fontSize: 22, marginBottom: 16, lineHeight: 1.4 }}>{puzzle.q}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {opts.map(o => {
+                let bg = "#1e293b", border = "1px solid #334155";
+                if (selected) {
+                  if (o === selected.correct) { bg = "#14532d"; border = "1px solid #22c55e"; }
+                  else if (o === selected.choice && o !== selected.correct) { bg = "#7f1d1d"; border = "1px solid #ef4444"; }
+                }
+                return (
+                  <button key={o} onClick={() => handleAnswer(o)} disabled={!!selected}
+                    style={{ ...styles.optBase, background: bg, border, opacity: selected && o !== selected.correct && o !== selected.choice ? 0.5 : 1 }}>
+                    {o}
+                  </button>
+                );
+              })}
+            </div>
+            {feedback && <div style={{ marginTop: 12, color: "#cbd5e1", fontSize: 14 }}>{feedback}</div>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
